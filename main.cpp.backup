@@ -1,0 +1,327 @@
+// STL
+#include <iostream>
+
+// Google Test
+#include "gtest/gtest.h"
+
+// GP
+#include "gp.h"
+using namespace GP;
+
+
+/**
+ * @class	DataSetting
+ * @brief	A data setting test fixture
+ * @author	Soohwankim
+ * @date	28/03/2014
+ */
+class DataSetting : public ::testing::Test
+{
+protected:
+	// Constructor
+	DataSetting() :
+		pX (new MatrixXf(5, 3)),	// Training inputs,	N = 5, D = 3
+	   pXs(new MatrixXf(4, 3))		// Test inputs,		M = 4, D = 3
+	{
+	}
+
+	virtual void SetUp()
+	{
+		// Training inputs
+		(*pX) << 0.118997681558377,   0.223811939491137,   0.890903252535799,
+				   0.498364051982143,   0.751267059305653,   0.959291425205444,
+					0.959743958516081,   0.255095115459269,   0.547215529963803,
+					0.340385726666133,   0.505957051665142,   0.138624442828679,
+					0.585267750979777,   0.699076722656686,   0.149294005559057;
+
+		// Test inputs
+		(*pXs) << 0.257508254123736,   0.243524968724989,   0.251083857976031,
+			       0.840717255983663,   0.929263623187228,   0.616044676146639,
+					 0.254282178971531,   0.349983765984809,   0.473288848902729,
+					 0.814284826068816,   0.196595250431208,   0.351659507062997;
+	}
+
+	//virtual void TearDown() {}
+
+protected:
+	MatrixXfPtr pX;		/// Training inputs
+	MatrixXfPtr pXs;		/// Test inputs
+};
+
+/**
+ * @class	PairwiseOperation
+ * @brief	A pairwise operation test fixture.
+ *
+ * @author	Soohwankim
+ * @date	28/03/2014
+ */
+class PairwiseOperation : public DataSetting
+{
+};
+
+/** @brief	Self squared distances between the training inputs. */
+TEST_F(PairwiseOperation, SelfSqDist)
+{
+	// Expected value
+	MatrixXf SqDist1(5, 5);
+	SqDist1 <<                 0,   0.426804688588141,   0.825954189963619,   0.694541938374676,   0.993268666957043, 
+		        0.426804688588141,                   0,   0.628864559452765,   0.758628447081624,   0.666371903972809,
+				  0.825954189963619,   0.628864559452765,                   0,   0.613483006883516,   0.495693637124971,
+				  0.694541938374676,   0.758628447081624,   0.613483006883516,                   0,   0.097376252724688,
+				  0.993268666957043,   0.666371903972809,   0.495693637124971,   0.097376252724688,                   0;
+
+	// Actual value
+	MatrixXfPtr pSqDist2 = PairwiseOp<float>::sqDist(pX);
+
+	// Test
+	EXPECT_TRUE(SqDist1.isApprox(*pSqDist2));
+}
+
+/** @brief	Cross squared distances between the training inputs and test inputs. */
+TEST_F(PairwiseOperation, CrossSqDist)
+{
+	// Expected value
+	MatrixXf SqDist1(5, 4);
+	SqDist1 << 0.428942639888786,   1.094088459152940,   0.208623015162883,   0.774948778516402,
+		        0.817371504190236,   0.266706823783192,   0.456802746403667,   0.776683299005042,
+				  0.580962819973139,   0.473407984092142,   0.512145332569427,   0.062822751513393,
+				  0.088386393666608,   0.657450171904375,   0.143741751464412,   0.365669019070698,
+				  0.325314862344639,   0.336096647276545,   0.336389999788830,   0.345888246811163;
+
+	// Actual value
+	MatrixXfPtr pSqDist2 = PairwiseOp<float>::sqDist(pX, pXs);
+
+	// Test
+	EXPECT_TRUE(SqDist1.isApprox(*pSqDist2));
+}
+
+int main(int argc, char** argv) 
+{ 
+	// Initialize test environment
+	::testing::InitGoogleTest(&argc, argv);
+		
+	// Test
+	int ret = RUN_ALL_TESTS(); 
+
+	system("pause");
+	return ret;
+}
+
+/*
+
+
+//#include "GP.h"
+//using namespace GP;
+//
+//int main()
+//{
+//	GP<float, MeanZero, CovSEIso, InfExact> gp;
+//	gp.hyp(hyp);
+//	gp.setTrainingData(Training Data);
+//	gp.train(10);
+//	gp.predict(Test Data)
+//
+//	return 0;
+//}
+
+#include "../src/util/pairwiseop.hpp"
+using namespace GP;
+
+class Empty
+{
+};
+
+class A
+{
+public:
+	typedef float real;
+};
+
+class B : public A
+{
+public:
+	real a;
+};
+
+int main()
+{
+	B b;
+	std::cout << "Empty: " << sizeof(Empty) << std::endl;
+	std::cout << "A: " << sizeof(A) << std::endl;
+	std::cout << "B: " << sizeof(B) << std::endl;
+
+	TypeTraits<float>::MatrixPtr pX(new TypeTraits<float>::Matrix(4, 2));
+	TypeTraits<float>::MatrixPtr pXs(new TypeTraits<float>::Matrix(3, 2));
+	(*pX) << 1, 5,
+		      2, 6,
+		      3, 7,
+		      4, 8;
+	(*pXs) << 3, 1,
+		       2, 2,
+		       1, 3;
+
+	TypeTraits<float>::MatrixPtr pSqDist = PairwiseOp<float>::sqDist(pX);
+	std::cout << (*pSqDist) << std::endl;
+
+	TypeTraits<float>::MatrixPtr pSqDist2 = PairwiseOp<float>::sqDist(pX, pXs);
+	std::cout << (*pSqDist2) << std::endl;
+
+	TypeTraits<float>::MatrixPtr pDelta = PairwiseOp<float>::delta(pX, 0);
+	std::cout << (*pDelta) << std::endl;
+
+	TypeTraits<float>::MatrixPtr pDelta2 = PairwiseOp<float>::delta(pX, pXs, 1);
+	std::cout << (*pDelta2) << std::endl;
+
+	//// X: NxD
+	//// X = [X1'] = [x1, y1, z1]
+	////     [X2']   [x2, y2, z2]
+	////     [...]   [    ...   ]
+	////     [Xn']   [xn, yn, zn]
+	//MatrixXf X(4, 2);
+	//X << 1, 5,
+	//	  2, 6,
+	//	  3, 7,
+	//	  4, 8;
+	//std::cout << "X: " << std::endl;
+	//std::cout << X << std::endl;
+
+	//// mu: 1xD
+	//// mu = [x, y, z]
+	//// Matlab: mu = mean(X, 1); 
+	//RowVectorXf mu(2);
+	//mu.noalias() = X.colwise().mean();			
+	//std::cout << "mu: " << std::endl;
+	//std::cout << mu << std::endl;
+
+	//// XX: NxD, shifted X for numerical stability
+	//// XX = [XX1'] = [x1-x, y1-y, z1-z] = [xx1, yy1, zz1]
+	////      [XX2']   [x2-x, y2-y, z2-z]   [xx2, yy2, zz2]
+	////      [... ]   [       ...      ]   [     ...     ]
+	////      [XXn']   [xn-x, yn-y, zn-z]   [xxn, yyn, zzn]
+	//// Matlab: XX = bsxfun(@minus, X, mu); or
+	////         XX = X - repmat(mu, N, 1);
+	//MatrixXf XX(4, 2);
+	//XX.noalias() = X.rowwise() - mu;
+	//std::cout << "XX: " << std::endl;
+	//std::cout << XX << std::endl;
+ //
+	//// XX2: Nx1, [XX2]i = XXi'*XXi, squared sum
+	//// XX2 = [xx1^2 + yy1^2 + zz1^2]
+	////       [xx2^2 + yy2^2 + zz2^2]
+	////       [          ...        ]
+	////       [xxn^2 + yyn^2 + zzn^2]
+	//// Matlab: XX2 = sum(XX.*XX, 2);
+	//MatrixXf XX2(4, 1);
+	//XX2.noalias() = XX.array().square().matrix().rowwise().sum();
+	//std::cout << "sum(XX.*XX, 2): " << std::endl;
+	//std::cout << XX2 << std::endl;
+
+	//// SqDist: NxN
+	//// [SqDist]_ij = (Xi - Xj)'*(Xi - Xj)
+	////             = (xi - xj)^2 + (yi - yj)^2 + (zi - zj)^2
+	////             = (xi^2 + yi^2 + zi^2) + (xj^2 + yj^2 + zj^2)
+	////               -2(xi*xj + yi*yj + zi*zj)
+	//MatrixXf SqDist(4, 4);
+	//SqDist.noalias() = XX2.replicate(1, 4) + XX2.transpose().replicate(4, 1) - 2*XX * XX.transpose();
+	//std::cout << "sq_dist: " << std::endl;
+	//std::cout << SqDist << std::endl;
+
+	//std::cout << "repmat(sum(a.*a,1)',1,m): " << std::endl;
+	//std::cout << x2y2z2.transpose().replicate(1, 4) << std::endl;
+
+	//std::cout << "repmat(sum(b.*b,1),n,1): " << std::endl;
+	//std::cout << x2y2z2.replicate(4, 1) << std::endl;
+
+	//MatrixXf xyz(4, 4);
+	//xyz = A.transpose() * A;
+	//std::cout << "a'*b: " << std::endl;
+	//std::cout << xyz << std::endl;
+
+	//MatrixXf sqDist(4, 4);
+	//sqDist = x2y2z2.transpose().replicate(1, 4) + x2y2z2.replicate(4, 1) - 2*A.transpose() * A;
+	//std::cout << "sq_dist: " << std::endl;
+	//std::cout << sqDist << std::endl;
+
+	//MatrixXf A(2, 4);
+	// A << 1, 2, 3, 4,
+	//	  5, 6, 7, 8;
+	// std::cout << "A: " << std::endl;
+	// std::cout << A << std::endl;
+	//
+	// VectorXf mean(2);
+	// mean = A.rowwise().mean();
+	// std::cout << "mean: " << std::endl;
+	// std::cout << mean << std::endl;
+	//
+	// A = A.colwise() - mean;
+	// std::cout << "A = A - mu: " << std::endl;
+	// std::cout << A << std::endl;
+	//
+	// MatrixXf x2y2z2(1, 4);
+	// x2y2z2 = A.array().square().colwise().sum();
+	// std::cout << "sum(A.*A, 2): " << std::endl;
+	// std::cout << x2y2z2 << std::endl;
+	//
+	// std::cout << "repmat(sum(a.*a,1)',1,m): " << std::endl;
+	// std::cout << x2y2z2.transpose().replicate(1, 4) << std::endl;
+	//
+	// std::cout << "repmat(sum(b.*b,1),n,1): " << std::endl;
+	// std::cout << x2y2z2.replicate(4, 1) << std::endl;
+	//
+	// MatrixXf xyz(4, 4);
+	// xyz = A.transpose() * A;
+	// std::cout << "a'*b: " << std::endl;
+	// std::cout << xyz << std::endl;
+	//
+	// MatrixXf sqDist(4, 4);
+	// sqDist = x2y2z2.transpose().replicate(1, 4) + x2y2z2.replicate(4, 1) - 2*A.transpose() * A;
+	//std::cout << "sq_dist: " << std::endl;
+	//std::cout << sqDist << std::endl;
+
+	// MatrixXf data(2,4);
+	// MatrixXf means(2,2);
+	//
+	// / data points
+	// data << 1, 23, 6, 9,
+	//		  3, 11, 7, 2;
+	//
+	// / means
+	// means << 2, 20,
+	//			3, 10;
+	//
+	// std::cout << "Data: " << std::endl;
+	// std::cout << data.replicate(2,1) << std::endl;
+	//
+	// VectorXf temp1(4);
+	// temp1 = Eigen::Map<VectorXf>(means.data(),4);
+	//
+	// std::cout << "Means: " << std::endl;
+	// std::cout << temp1.replicate(1,4) << std::endl;
+	//
+	// MatrixXf temp2(4,4);
+	// temp2 = (data.replicate(2,1) - temp1.replicate(1,4));
+	// std::cout << "Differences: " << std::endl;
+	// std::cout << temp2 << std::endl;
+	//
+	// MatrixXf temp3(2,8);
+	// temp3 = Eigen::Map<MatrixXf>(temp2.data(),2,8);
+	// std::cout << "Remap to 2xF: " << std::endl;
+	// std::cout << temp3 << std::endl;
+	//
+	// MatrixXf temp4(1,8);
+	// temp4 = temp3.colwise().squaredNorm();
+	// std::cout << "Squared norm: " << std::endl;
+	// std::cout << temp4 << std::endl;//.minCoeff(&index);
+	//
+	// MatrixXf temp5(2,4);
+	// temp5 = Eigen::Map<MatrixXf>(temp4.data(),2,4);
+	//std::cout << "Squared norm result, the distances: " << std::endl;
+	//std::cout << temp5.transpose() << std::endl;
+
+	//std::cout << "Cannot get the indices: " << std::endl;
+	//std::cout << temp5.transpose().colwise().minCoeff() << std::endl; // .minCoeff(&x,&y);
+
+	system("pause");
+	return 0;
+}
+*/
